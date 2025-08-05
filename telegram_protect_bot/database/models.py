@@ -104,6 +104,7 @@ class Warning(Base):
     
     # Relationships
     user = relationship("User", back_populates="warnings", foreign_keys=[user_id])
+    admin = relationship("User", foreign_keys=[admin_id])
     
     def __repr__(self):
         return f"<Warning(id={self.id}, user_id={self.user_id}, group_id={self.group_id})>"
@@ -123,6 +124,7 @@ class Ban(Base):
     
     # Relationships
     user = relationship("User", back_populates="bans", foreign_keys=[user_id])
+    admin = relationship("User", foreign_keys=[admin_id])
     
     def __repr__(self):
         return f"<Ban(id={self.id}, user_id={self.user_id}, group_id={self.group_id})>"
@@ -139,6 +141,10 @@ class Filter(Base):
     created_by = Column(BigInteger, ForeignKey('users.id'))
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
+    # Relationships
+    group = relationship("Group", foreign_keys=[group_id])
+    creator = relationship("User", foreign_keys=[created_by])
+    
     def __repr__(self):
         return f"<Filter(id={self.id}, group_id={self.group_id}, keyword='{self.keyword}')>"
 
@@ -153,6 +159,11 @@ class Log(Base):
     action = Column(String(255))
     details = Column(Text, nullable=True)
     date = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    # Relationships
+    group = relationship("Group", foreign_keys=[group_id])
+    user = relationship("User", foreign_keys=[user_id])
+    admin = relationship("User", foreign_keys=[admin_id])
     
     def __repr__(self):
         return f"<Log(id={self.id}, action='{self.action}')>"
