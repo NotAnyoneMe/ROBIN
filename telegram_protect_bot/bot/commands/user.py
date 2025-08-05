@@ -27,16 +27,43 @@ async def setup(client):
         )
         
         # Format start message
-        start_message = messages.START_MESSAGE.format(
-            mention=helpers.get_user_link(user),
-            bot_name=settings.BOT_NAME
-        )
-        
-        # Create buttons
-        buttons = [
-            [Button.url("Add to Group", f"https://t.me/{settings.BOT_USERNAME}?startgroup=true")],
-            [Button.url("Support", f"https://t.me/{settings.OWNER_USERNAME}")]
-        ]
+        if event.is_private:
+            # In private chat, show the main menu
+            start_message = messages.MAIN_MENU_TEXT.format(
+                user_name=user.first_name
+            )
+            
+            # Create inline buttons for main menu
+            buttons = [
+                [
+                    Button.url("➕ Add to Group", f"https://t.me/{settings.BOT_USERNAME}?startgroup=true"),
+                    Button.callback("📊 Statistics", "analytics:main")
+                ],
+                [
+                    Button.callback("⚙️ Settings", "settings:main"),
+                    Button.callback("❓ Help & Support", "help_menu")
+                ],
+                [
+                    Button.callback("📱 My Groups", "user_info:groups"),
+                    Button.url("🔗 Official Channel", f"https://t.me/{settings.OWNER_USERNAME}")
+                ],
+                [
+                    Button.callback("🌐 Language", "language:select"),
+                    Button.callback("📋 About Bot", "about:bot")
+                ]
+            ]
+        else:
+            # In group chat, show simpler message
+            start_message = messages.START_MESSAGE.format(
+                mention=helpers.get_user_link(user),
+                bot_name=settings.BOT_NAME
+            )
+            
+            # Create simpler buttons for group chat
+            buttons = [
+                [Button.url("➕ Add to Group", f"https://t.me/{settings.BOT_USERNAME}?startgroup=true")],
+                [Button.callback("⚙️ Settings", "settings:main"), Button.callback("❓ Help", "help_menu")]
+            ]
         
         # Send message with buttons
         await event.reply(start_message, buttons=buttons, parse_mode='md')
@@ -45,13 +72,34 @@ async def setup(client):
     @decorators.log_command
     async def help_command(event):
         """Handle /help command."""
-        # Format help message
-        help_message = messages.HELP_MESSAGE.format(
-            owner_username=settings.OWNER_USERNAME
-        )
+        # Format help message with interactive buttons
+        help_message = messages.HELP_MENU_TEXT
         
-        # Send help message
-        await event.reply(help_message, parse_mode='md')
+        # Create help menu buttons
+        buttons = [
+            [
+                Button.callback("👮 Admin Commands", "help:admin"),
+                Button.callback("🛡️ Protection Features", "help:protection")
+            ],
+            [
+                Button.callback("⚙️ Group Settings", "help:settings"),
+                Button.callback("📊 Analytics & Reports", "help:analytics")
+            ],
+            [
+                Button.callback("🤖 AI Features", "help:ai"),
+                Button.callback("🔧 Troubleshooting", "help:troubleshooting")
+            ],
+            [
+                Button.url("📞 Contact Support", f"https://t.me/{settings.OWNER_USERNAME}"),
+                Button.callback("🆕 What's New", "help:whatsnew")
+            ],
+            [
+                Button.callback("⬅️ Back to Main Menu", "main_menu")
+            ]
+        ]
+        
+        # Send help message with buttons
+        await event.reply(help_message, buttons=buttons, parse_mode='md')
         
         # Auto-delete in groups if enabled
         if not event.is_private and settings.AUTO_DELETE_COMMANDS:

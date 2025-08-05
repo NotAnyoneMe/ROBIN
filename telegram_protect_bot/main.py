@@ -8,8 +8,8 @@ from telegram_protect_bot.config import settings
 from telegram_protect_bot.database import operations as db
 
 # Import handlers
-from telegram_protect_bot.bot.handlers import welcome, antispam, admin
-from telegram_protect_bot.bot.commands import user, settings as settings_commands
+from telegram_protect_bot.bot.handlers import welcome, antispam, admin, callback
+from telegram_protect_bot.bot.commands import user, settings as settings_commands, admin as admin_commands
 
 # Configure logging
 logging.basicConfig(
@@ -41,10 +41,12 @@ async def main():
     await welcome.setup(client)
     await antispam.setup(client)
     await admin.setup(client)
+    callback.register_handlers(client)
     
     # Set up commands
     await user.setup(client)
     await settings_commands.setup(client)
+    await admin_commands.setup(client)
     
     # Log successful startup
     logger.info(f"Bot started successfully as @{settings.BOT_USERNAME}")

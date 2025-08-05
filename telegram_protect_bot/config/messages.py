@@ -113,3 +113,118 @@ Use the buttons below to change settings.
 # Callback Responses
 SETTING_UPDATED = "✅ Setting updated successfully!"
 SETTING_UNCHANGED = "ℹ️ Setting remains unchanged."
+
+# Inline Button Menu Templates
+MAIN_MENU_TEXT = """
+🛡️ **Protection Bot Main Menu**
+
+Hello {user_name}! I'm a powerful group protection bot designed to keep your Telegram groups safe.
+
+Please select an option below:
+"""
+
+HELP_MENU_TEXT = """
+📚 **Help & Documentation**
+
+Select a category to view available commands and features:
+"""
+
+ADMIN_PANEL_TEXT = """
+👮‍♂️ **Admin Control Panel**
+
+Select an action to perform:
+"""
+
+SETTINGS_MENU_TEXT = """
+⚙️ **Group Configuration**
+
+Group: {group_name}
+ID: `{group_id}`
+
+Select a setting to configure:
+"""
+
+ANTISPAM_SETTINGS_TEXT = """
+🛡️ **Anti-Spam Configuration**
+
+Flood Protection: {antispam_status}
+Link Filtering: {link_filtering}
+Message Limit: {message_limit} in {message_window}s
+Forward Limit: {forward_limit} in {forward_window}s
+
+Select an option to configure:
+"""
+
+WELCOME_SETTINGS_TEXT = """
+👋 **Welcome & Goodbye System**
+
+Welcome: {welcome_status} | Auto-Delete: {auto_delete_time}min
+Goodbye: {goodbye_status}
+
+Select an option to configure:
+"""
+
+BAN_USER_SELECT_TEXT = """
+🚫 **Ban User**
+
+Please reply to a message from the user you want to ban.
+"""
+
+BAN_USER_OPTIONS_TEXT = """
+🚫 **Ban User Options**
+
+Target: @{username} | ID: {user_id}
+Name: {user_name}
+Reason: [Click to set reason]
+
+Select ban duration:
+"""
+
+BAN_USER_SUCCESS_TEXT = """
+✅ **User Banned Successfully**
+
+User ID: `{user_id}`
+Duration: {ban_time}
+"""
+
+MUTE_USER_SELECT_TEXT = """
+🔇 **Mute User**
+
+Please reply to a message from the user you want to mute.
+"""
+
+MUTE_USER_OPTIONS_TEXT = """
+🔇 **Mute User Options**
+
+Target: @{username}
+Current Status: Active Member
+
+Select restrictions to apply:
+"""
+
+MUTE_USER_SUCCESS_TEXT = """
+✅ **User Muted Successfully**
+
+User ID: `{user_id}`
+"""
+
+CLEAN_MESSAGES_OPTIONS_TEXT = """
+🧹 **Message Cleanup Options**
+
+Select how many messages to delete or choose a specific cleanup option:
+"""
+
+CLEAN_MESSAGES_SUCCESS_TEXT = """
+✅ **Messages Cleaned Successfully**
+
+Deleted {count} messages.
+"""
+
+LANGUAGE_SELECTION_TEXT = """
+🌍 **Language Settings**
+
+Current: English 🇺🇸
+Available: 25 languages
+
+Select your preferred language:
+"""

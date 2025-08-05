@@ -121,6 +121,45 @@ def format_time_delta(seconds):
         days = seconds // 86400
         return f"{days} day{'s' if days != 1 else ''}"
 
+def format_time_duration(seconds):
+    """Format a time duration in seconds to a detailed human-readable string."""
+    if not seconds:
+        return "indefinitely"
+        
+    days, remainder = divmod(seconds, 86400)
+    hours, remainder = divmod(remainder, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    
+    parts = []
+    if days:
+        parts.append(f"{days} day{'s' if days != 1 else ''}")
+    if hours:
+        parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+    if minutes:
+        parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+    if seconds:
+        parts.append(f"{seconds} second{'s' if seconds != 1 else ''}")
+        
+    if len(parts) == 1:
+        return parts[0]
+    elif len(parts) == 2:
+        return f"{parts[0]} and {parts[1]}"
+    else:
+        return ", ".join(parts[:-1]) + f", and {parts[-1]}"
+
+def is_time_format(text):
+    """Check if a string is in a valid time format."""
+    if not text:
+        return False
+        
+    # Check if it's just a number (seconds)
+    if text.isdigit():
+        return True
+        
+    # Check for time with units (e.g., 1h, 30m, 1d)
+    time_regex = re.compile(r'^(\d+[smhd])+$')
+    return bool(time_regex.match(text))
+
 def is_valid_url(text):
     """Check if a text contains a valid URL."""
     # Simple URL regex
