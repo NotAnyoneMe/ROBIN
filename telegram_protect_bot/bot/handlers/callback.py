@@ -1,11 +1,56 @@
 from telethon import events
 import json
+import base64
 import logging
+from typing import Dict, Any, Tuple, Optional, List, Union
+
 from telegram_protect_bot.bot.utils import permissions
 from telegram_protect_bot.database import operations
 from telegram_protect_bot.config import messages
 
 logger = logging.getLogger(__name__)
+
+class CallbackData:
+    """Structured callback data class."""
+    
+    @staticmethod
+    def serialize(action: str, **params) -> str:
+        """
+        Serialize callback data to a string.
+        
+        Args:
+            action: The action to perform
+            **params: Additional parameters for the action
+            
+        Returns:
+            str: Base64-encoded JSON string
+        """
+        data = {"a": action}
+        if params:
+            data["p"] = params
+        json_data = json.dumps(data)
+        return base64.b64encode(json_data.encode()).decode()
+    
+    @staticmethod
+    def deserialize(data: str) -> Tuple[str, Dict[str, Any]]:
+        """
+        Deserialize callback data from a string.
+        
+        Args:
+            data: Base64-encoded JSON string
+            
+        Returns:
+            Tuple[str, Dict[str, Any]]: Action and parameters
+        """
+        try:
+            json_data = base64.b64decode(data.encode()).decode()
+            data_dict = json.loads(json_data)
+            action = data_dict.get("a", "")
+            params = data_dict.get("p", {})
+            return action, params
+        except Exception as e:
+            logger.error(f"Error deserializing callback data: {e}")
+            return "", {}
 
 # Callback data format: action:param1:param2:...
 # For example: settings:antispam:toggle
@@ -15,11 +60,19 @@ async def callback_query_handler(event):
     try:
         # Get the callback data
         data = event.data.decode('utf-8')
-        logger.info(f"Callback query received: {data}")
+        logger.info(f"Callback query received: {data[:20]}...")
         
         # Parse the callback data
-        parts = data.split(':')
-        action = parts[0]
+        # Check if it's the new format or old format
+        if data.startswith('eyJ'):  # Base64 JSON format starts with 'eyJ'
+            # New format
+            action, params = CallbackData.deserialize(data)
+            parts = [action] + list(params.values()) if params else [action]
+        else:
+            # Old format for backward compatibility
+            parts = data.split(':')
+            action = parts[0]
+            params = {f"param{i}": param for i, param in enumerate(parts[1:], 1)} if len(parts) > 1 else {}
         
         # Get the user who clicked the button
         user = await event.get_sender()
@@ -27,6 +80,17 @@ async def callback_query_handler(event):
         
         # Check if the user is an admin (for admin-only actions)
         is_admin = await permissions.is_user_admin(event.client, chat.id, user.id)
+        
+        # Admin-only actions
+        admin_actions = {
+            "admin_panel", "settings", "ban_user", "mute_user", 
+            "warn_user", "clean_messages"
+        }
+        
+        # Check admin permissions for admin-only actions
+        if action in admin_actions and not is_admin:
+            await event.answer(f"You need to be an admin to {action.replace('_', ' ')}.", alert=True)
+            return
         
         # Handle different callback actions
         if action == "main_menu":
@@ -36,43 +100,25 @@ async def callback_query_handler(event):
             await handle_help_menu(event, user, chat)
         
         elif action == "admin_panel":
-            if is_admin:
-                await handle_admin_panel(event, user, chat, parts)
-            else:
-                await event.answer("You need to be an admin to access this menu.", alert=True)
+            await handle_admin_panel(event, user, chat, parts)
         
         elif action == "settings":
-            if is_admin:
-                await handle_settings(event, user, chat, parts)
-            else:
-                await event.answer("You need to be an admin to change settings.", alert=True)
+            await handle_settings(event, user, chat, parts)
         
         elif action == "user_info":
             await handle_user_info(event, user, chat, parts)
         
         elif action == "ban_user":
-            if is_admin:
-                await handle_ban_user(event, user, chat, parts)
-            else:
-                await event.answer("You need to be an admin to ban users.", alert=True)
+            await handle_ban_user(event, user, chat, parts)
         
         elif action == "mute_user":
-            if is_admin:
-                await handle_mute_user(event, user, chat, parts)
-            else:
-                await event.answer("You need to be an admin to mute users.", alert=True)
+            await handle_mute_user(event, user, chat, parts)
         
         elif action == "warn_user":
-            if is_admin:
-                await handle_warn_user(event, user, chat, parts)
-            else:
-                await event.answer("You need to be an admin to warn users.", alert=True)
+            await handle_warn_user(event, user, chat, parts)
         
         elif action == "clean_messages":
-            if is_admin:
-                await handle_clean_messages(event, user, chat, parts)
-            else:
-                await event.answer("You need to be an admin to clean messages.", alert=True)
+            await handle_clean_messages(event, user, chat, parts)
         
         elif action == "analytics":
             await handle_analytics(event, user, chat, parts)
@@ -84,7 +130,7 @@ async def callback_query_handler(event):
             await event.answer("Unknown action. Please try again.", alert=True)
     
     except Exception as e:
-        logger.error(f"Error handling callback query: {e}")
+        logger.error(f"Error handling callback query: {e}", exc_info=True)
         await event.answer("An error occurred. Please try again later.", alert=True)
 
 async def handle_main_menu(event, user, chat):
@@ -93,20 +139,44 @@ async def handle_main_menu(event, user, chat):
         # Create the main menu message with inline buttons
         buttons = [
             [
-                event.client.build_reply_markup().button(text="➕ Add to Group", url=f"https://t.me/{event.client.username}?startgroup=true"),
-                event.client.build_reply_markup().button(text="📊 Statistics", callback_data="analytics:main")
+                event.client.build_reply_markup().button(
+                    text="➕ Add to Group", 
+                    url=f"https://t.me/{event.client.username}?startgroup=true"
+                ),
+                event.client.build_reply_markup().button(
+                    text="📊 Statistics", 
+                    callback_data=CallbackData.serialize("analytics", section="main")
+                )
             ],
             [
-                event.client.build_reply_markup().button(text="⚙️ Settings", callback_data="settings:main"),
-                event.client.build_reply_markup().button(text="❓ Help & Support", callback_data="help_menu")
+                event.client.build_reply_markup().button(
+                    text="⚙️ Settings", 
+                    callback_data=CallbackData.serialize("settings", section="main")
+                ),
+                event.client.build_reply_markup().button(
+                    text="❓ Help & Support", 
+                    callback_data=CallbackData.serialize("help_menu")
+                )
             ],
             [
-                event.client.build_reply_markup().button(text="📱 My Groups", callback_data="user_info:groups"),
-                event.client.build_reply_markup().button(text="🔗 Official Channel", url="https://t.me/ProtectionBotChannel")
+                event.client.build_reply_markup().button(
+                    text="📱 My Groups", 
+                    callback_data=CallbackData.serialize("user_info", section="groups")
+                ),
+                event.client.build_reply_markup().button(
+                    text="🔗 Official Channel", 
+                    url="https://t.me/ProtectionBotChannel"
+                )
             ],
             [
-                event.client.build_reply_markup().button(text="🌐 Language", callback_data="language:select"),
-                event.client.build_reply_markup().button(text="📋 About Bot", callback_data="about:bot")
+                event.client.build_reply_markup().button(
+                    text="🌐 Language", 
+                    callback_data=CallbackData.serialize("language", action="select")
+                ),
+                event.client.build_reply_markup().button(
+                    text="📋 About Bot", 
+                    callback_data=CallbackData.serialize("about", section="bot")
+                )
             ]
         ]
         
@@ -122,7 +192,7 @@ async def handle_main_menu(event, user, chat):
         await event.answer()
     
     except Exception as e:
-        logger.error(f"Error handling main menu: {e}")
+        logger.error(f"Error handling main menu: {e}", exc_info=True)
         await event.answer("An error occurred. Please try again later.", alert=True)
 
 async def handle_help_menu(event, user, chat):
@@ -131,23 +201,50 @@ async def handle_help_menu(event, user, chat):
         # Create the help menu message with inline buttons
         buttons = [
             [
-                event.client.build_reply_markup().button(text="👮 Admin Commands", callback_data="help:admin"),
-                event.client.build_reply_markup().button(text="🛡️ Protection Features", callback_data="help:protection")
+                event.client.build_reply_markup().button(
+                    text="👮 Admin Commands", 
+                    callback_data=CallbackData.serialize("help", section="admin")
+                ),
+                event.client.build_reply_markup().button(
+                    text="🛡️ Protection Features", 
+                    callback_data=CallbackData.serialize("help", section="protection")
+                )
             ],
             [
-                event.client.build_reply_markup().button(text="⚙️ Group Settings", callback_data="help:settings"),
-                event.client.build_reply_markup().button(text="📊 Analytics & Reports", callback_data="help:analytics")
+                event.client.build_reply_markup().button(
+                    text="⚙️ Group Settings", 
+                    callback_data=CallbackData.serialize("help", section="settings")
+                ),
+                event.client.build_reply_markup().button(
+                    text="📊 Analytics & Reports", 
+                    callback_data=CallbackData.serialize("help", section="analytics")
+                )
             ],
             [
-                event.client.build_reply_markup().button(text="🤖 AI Features", callback_data="help:ai"),
-                event.client.build_reply_markup().button(text="🔧 Troubleshooting", callback_data="help:troubleshooting")
+                event.client.build_reply_markup().button(
+                    text="🤖 AI Features", 
+                    callback_data=CallbackData.serialize("help", section="ai")
+                ),
+                event.client.build_reply_markup().button(
+                    text="🔧 Troubleshooting", 
+                    callback_data=CallbackData.serialize("help", section="troubleshooting")
+                )
             ],
             [
-                event.client.build_reply_markup().button(text="📞 Contact Support", url="https://t.me/ProtectionBotSupport"),
-                event.client.build_reply_markup().button(text="🆕 What's New", callback_data="help:whatsnew")
+                event.client.build_reply_markup().button(
+                    text="📞 Contact Support", 
+                    url="https://t.me/ProtectionBotSupport"
+                ),
+                event.client.build_reply_markup().button(
+                    text="🆕 What's New", 
+                    callback_data=CallbackData.serialize("help", section="whatsnew")
+                )
             ],
             [
-                event.client.build_reply_markup().button(text="⬅️ Back to Main Menu", callback_data="main_menu")
+                event.client.build_reply_markup().button(
+                    text="⬅️ Back to Main Menu", 
+                    callback_data=CallbackData.serialize("main_menu")
+                )
             ]
         ]
         
@@ -163,7 +260,7 @@ async def handle_help_menu(event, user, chat):
         await event.answer()
     
     except Exception as e:
-        logger.error(f"Error handling help menu: {e}")
+        logger.error(f"Error handling help menu: {e}", exc_info=True)
         await event.answer("An error occurred. Please try again later.", alert=True)
 
 async def handle_admin_panel(event, user, chat, parts):
