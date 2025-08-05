@@ -8,7 +8,8 @@ from telegram_protect_bot.bot.utils import helpers, permissions, decorators
 async def setup(client):
     """Set up settings command handlers."""
     
-    @client.add_event_handler
+    from telethon import events
+    
     @decorators.admin_required
     @decorators.group_only
     @decorators.handle_errors
@@ -56,7 +57,6 @@ async def setup(client):
         # Send settings message with buttons
         await event.reply(settings_message, buttons=buttons, parse_mode='md')
     
-    @client.add_event_handler
     @decorators.admin_required
     @decorators.group_only
     @decorators.handle_errors
@@ -90,7 +90,6 @@ async def setup(client):
             # Send current welcome message and instructions
             await event.reply(f"Current welcome message:\n\n{current_message}\n\nTo update, use /welcome <new message>\n\nAvailable variables: {{mention}}, {{first_name}}, {{last_name}}, {{username}}, {{user_id}}, {{chat_title}}, {{chat_id}}")
     
-    @client.add_event_handler
     @decorators.admin_required
     @decorators.group_only
     @decorators.handle_errors
@@ -124,7 +123,6 @@ async def setup(client):
             # Send current goodbye message and instructions
             await event.reply(f"Current goodbye message:\n\n{current_message}\n\nTo update, use /goodbye <new message>\n\nAvailable variables: {{mention}}, {{first_name}}, {{last_name}}, {{username}}, {{user_id}}, {{chat_title}}, {{chat_id}}")
     
-    @client.add_event_handler
     @decorators.admin_required
     @decorators.group_only
     @decorators.handle_errors
@@ -158,7 +156,6 @@ async def setup(client):
             # Send current rules and instructions
             await event.reply(f"Current group rules:\n\n{current_rules}\n\nTo update, use /rules <new rules>")
     
-    @client.add_event_handler
     @decorators.admin_required
     @decorators.group_only
     @decorators.handle_errors
@@ -201,7 +198,6 @@ async def setup(client):
             # Send current setting and instructions
             await event.reply(f"Anti-spam system is currently {current_setting}.\n\nTo change, use /antispam on or /antispam off")
     
-    @client.add_event_handler
     async def callback_query_handler(event):
         """Handle callback queries for settings buttons."""
         # Get the data
@@ -318,9 +314,9 @@ async def setup(client):
             print(f"Error updating settings message: {e}")
     
     # Register the event handlers
-    client.add_event_handler(settings_command, events.NewMessage(pattern=r"^/settings(?:@\w+)?"))
-    client.add_event_handler(welcome_command, events.NewMessage(pattern=r"^/welcome(?:@\w+)?"))
-    client.add_event_handler(goodbye_command, events.NewMessage(pattern=r"^/goodbye(?:@\w+)?"))
-    client.add_event_handler(rules_command, events.NewMessage(pattern=r"^/setrules(?:@\w+)?"))
-    client.add_event_handler(antispam_command, events.NewMessage(pattern=r"^/antispam(?:@\w+)?"))
-    client.add_event_handler(callback_query_handler, events.CallbackQuery())
+    client.client.add_event_handler(settings_command, events.NewMessage(pattern=r"^/settings(?:@\w+)?"))
+    client.client.add_event_handler(welcome_command, events.NewMessage(pattern=r"^/welcome(?:@\w+)?"))
+    client.client.add_event_handler(goodbye_command, events.NewMessage(pattern=r"^/goodbye(?:@\w+)?"))
+    client.client.add_event_handler(rules_command, events.NewMessage(pattern=r"^/rules(?:@\w+)?"))
+    client.client.add_event_handler(antispam_command, events.NewMessage(pattern=r"^/antispam(?:@\w+)?"))
+    client.client.add_event_handler(callback_query_handler, events.CallbackQuery())

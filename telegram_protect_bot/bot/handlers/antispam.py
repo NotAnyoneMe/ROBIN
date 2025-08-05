@@ -9,7 +9,8 @@ from telegram_protect_bot.bot.utils import helpers, permissions, decorators
 async def setup(client):
     """Set up anti-spam handlers."""
     
-    @client.add_event_handler
+    from telethon import events
+    
     @decorators.handle_errors
     async def on_message(event):
         """Handle new messages for spam detection."""
@@ -175,4 +176,4 @@ async def setup(client):
             await client.send_message_to_log_channel(spam_notification)
     
     # Register the event handler
-    client.add_event_handler(on_message, events.NewMessage())
+    client.client.add_event_handler(on_message, events.NewMessage())
