@@ -9,7 +9,8 @@ from telegram_protect_bot.bot.utils import helpers, permissions, decorators
 async def setup(client):
     """Set up admin command handlers."""
     
-    @client.add_event_handler
+    from telethon import events
+    
     @decorators.admin_required
     @decorators.bot_admin_required
     @decorators.group_only
@@ -94,7 +95,6 @@ async def setup(client):
         except Exception as e:
             await event.reply(messages.GENERAL_ERROR.format(error_message=str(e)))
     
-    @client.add_event_handler
     @decorators.admin_required
     @decorators.bot_admin_required
     @decorators.group_only
@@ -155,7 +155,6 @@ async def setup(client):
         except Exception as e:
             await event.reply(messages.GENERAL_ERROR.format(error_message=str(e)))
     
-    @client.add_event_handler
     @decorators.admin_required
     @decorators.bot_admin_required
     @decorators.group_only
@@ -232,7 +231,6 @@ async def setup(client):
         except Exception as e:
             await event.reply(messages.GENERAL_ERROR.format(error_message=str(e)))
     
-    @client.add_event_handler
     @decorators.admin_required
     @decorators.bot_admin_required
     @decorators.group_only
@@ -314,7 +312,6 @@ async def setup(client):
         except Exception as e:
             await event.reply(messages.GENERAL_ERROR.format(error_message=str(e)))
     
-    @client.add_event_handler
     @decorators.admin_required
     @decorators.bot_admin_required
     @decorators.group_only
@@ -372,7 +369,6 @@ async def setup(client):
         except Exception as e:
             await event.reply(messages.GENERAL_ERROR.format(error_message=str(e)))
     
-    @client.add_event_handler
     @decorators.admin_required
     @decorators.bot_admin_required
     @decorators.group_only
@@ -476,7 +472,6 @@ async def setup(client):
         except Exception as e:
             await event.reply(messages.GENERAL_ERROR.format(error_message=str(e)))
     
-    @client.add_event_handler
     @decorators.admin_required
     @decorators.bot_admin_required
     @decorators.group_only
@@ -543,10 +538,10 @@ async def setup(client):
             await event.reply(messages.GENERAL_ERROR.format(error_message=str(e)))
     
     # Register the event handlers
-    client.add_event_handler(ban_command, events.NewMessage(pattern=r"^/ban(?:@\w+)?"))
-    client.add_event_handler(unban_command, events.NewMessage(pattern=r"^/unban(?:@\w+)?"))
-    client.add_event_handler(kick_command, events.NewMessage(pattern=r"^/kick(?:@\w+)?"))
-    client.add_event_handler(mute_command, events.NewMessage(pattern=r"^/mute(?:@\w+)?"))
-    client.add_event_handler(unmute_command, events.NewMessage(pattern=r"^/unmute(?:@\w+)?"))
-    client.add_event_handler(warn_command, events.NewMessage(pattern=r"^/warn(?:@\w+)?"))
-    client.add_event_handler(unwarn_command, events.NewMessage(pattern=r"^/unwarn(?:@\w+)?"))
+    client.client.add_event_handler(ban_command, events.NewMessage(pattern=r"^/ban(?:@\w+)?"))
+    client.client.add_event_handler(unban_command, events.NewMessage(pattern=r"^/unban(?:@\w+)?"))
+    client.client.add_event_handler(kick_command, events.NewMessage(pattern=r"^/kick(?:@\w+)?"))
+    client.client.add_event_handler(mute_command, events.NewMessage(pattern=r"^/mute(?:@\w+)?"))
+    client.client.add_event_handler(unmute_command, events.NewMessage(pattern=r"^/unmute(?:@\w+)?"))
+    client.client.add_event_handler(warn_command, events.NewMessage(pattern=r"^/warn(?:@\w+)?"))
+    client.client.add_event_handler(unwarn_command, events.NewMessage(pattern=r"^/unwarn(?:@\w+)?"))

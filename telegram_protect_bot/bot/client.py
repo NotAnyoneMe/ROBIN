@@ -71,22 +71,24 @@ class BotClient:
             
     async def send_message_to_log_channel(self, message):
         """Send a message to the log channel."""
-        if settings.LOG_CHANNEL_ID:
+        if hasattr(settings, 'LOG_CHANNEL_ID') and settings.LOG_CHANNEL_ID:
             try:
                 await self.client.send_message(settings.LOG_CHANNEL_ID, message)
                 return True
             except Exception as e:
                 logger.error(f"Failed to send message to log channel: {e}")
                 return False
+        logger.info(f"Log message (no channel): {message}")
         return False
         
     async def send_admin_notification(self, message):
         """Send a notification to the admin chat."""
-        if settings.ADMIN_CHAT_ID:
+        if hasattr(settings, 'ADMIN_CHAT_ID') and settings.ADMIN_CHAT_ID:
             try:
                 await self.client.send_message(settings.ADMIN_CHAT_ID, message)
                 return True
             except Exception as e:
                 logger.error(f"Failed to send admin notification: {e}")
                 return False
+        logger.info(f"Admin notification (no channel): {message}")
         return False

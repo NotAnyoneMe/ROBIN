@@ -1,10 +1,19 @@
 import functools
+import re
+import time
+import logging
+from typing import Optional, Dict, Any, List, Callable, Union
 from telethon import events
 from telethon.errors import ChatAdminRequiredError, UserAdminInvalidError
 
 from telegram_protect_bot.config import messages
-from telegram_protect_bot.bot.utils import permissions
+from telegram_protect_bot.bot.utils import permissions, validators
 from telegram_protect_bot.database import operations as db
+
+logger = logging.getLogger(__name__)
+
+# Store for rate limiting
+_rate_limit_store: Dict[str, List[float]] = {}
 
 def admin_required(func):
     """Decorator to check if the user is an admin in the chat."""
@@ -128,6 +137,7 @@ def handle_errors(func):
             error_message = str(e)
             await event.reply(messages.GENERAL_ERROR.format(error_message=error_message))
             # Log the error
+            logger.error(f"Error in {func.__name__}: {error_message}", exc_info=True)
             db.add_log(
                 action="error",
                 user_id=event.sender_id,
@@ -135,3 +145,93 @@ def handle_errors(func):
                 details=f"Error in {func.__name__}: {error_message}"
             )
     return wrapper
+
+def validate_input(pattern: Optional[str] = None, max_length: Optional[int] = None):
+    """
+    Decorator to validate user input.
+    
+    Args:
+        pattern: Optional regex pattern to validate input against
+        max_length: Optional maximum length for the input
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(event, *args, **kwargs):
+            # Get the user input
+            text = event.text
+            
+            # Validate against pattern if provided
+            if pattern and not re.match(pattern, text):
+                await event.reply("❌ Invalid input format.")
+                return
+                
+            # Check length if max_length provided
+            if max_length and len(text) > max_length:
+                await event.reply(f"❌ Input too long. Maximum length is {max_length} characters.")
+                return
+                
+            return await func(event, *args, **kwargs)
+        return wrapper
+    return decorator
+
+def rate_limit(calls: int = 5, period: int = 60):
+    """
+    Rate limit decorator to prevent command abuse.
+    
+    Args:
+        calls: Maximum number of calls allowed in the period
+        period: Time period in seconds
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(event, *args, **kwargs):
+            user_id = event.sender_id
+            command = event.text.split()[0] if event.text else "unknown"
+            key = f"{user_id}:{command}"
+            current_time = time.time()
+            
+            if key not in _rate_limit_store:
+                _rate_limit_store[key] = []
+                
+            # Remove timestamps older than the period
+            _rate_limit_store[key] = [t for t in _rate_limit_store[key] if current_time - t < period]
+            
+            # Check if rate limit exceeded
+            if len(_rate_limit_store[key]) >= calls:
+                await event.reply(f"❌ Rate limit exceeded. Try again in {period} seconds.")
+                return
+                
+            # Add current timestamp
+            _rate_limit_store[key].append(current_time)
+            
+            return await func(event, *args, **kwargs)
+        return wrapper
+    return decorator
+
+def validate_args(min_args: int = 0, max_args: Optional[int] = None):
+    """
+    Decorator to validate command arguments.
+    
+    Args:
+        min_args: Minimum number of arguments required
+        max_args: Maximum number of arguments allowed (None for no limit)
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(event, *args, **kwargs):
+            # Get command arguments
+            command_args = event.text.split()[1:] if event.text else []
+            
+            # Check minimum arguments
+            if len(command_args) < min_args:
+                await event.reply(f"❌ This command requires at least {min_args} argument{'s' if min_args != 1 else ''}.")
+                return
+                
+            # Check maximum arguments
+            if max_args is not None and len(command_args) > max_args:
+                await event.reply(f"❌ This command accepts at most {max_args} argument{'s' if max_args != 1 else ''}.")
+                return
+                
+            return await func(event, *args, **kwargs)
+        return wrapper
+    return decorator

@@ -8,7 +8,8 @@ from telegram_protect_bot.bot.utils import helpers, decorators
 async def setup(client):
     """Set up welcome message handlers."""
     
-    @client.add_event_handler
+    from telethon import events
+    
     @decorators.handle_errors
     async def on_user_join(event):
         """Handle user join events."""
@@ -71,7 +72,6 @@ async def setup(client):
             raid_message = f"🚨 **Possible Raid Detected!**\n\n{group_settings.raid_threshold}+ users joined {chat.title} in the last minute."
             await client.send_message_to_log_channel(raid_message)
     
-    @client.add_event_handler
     @decorators.handle_errors
     async def on_user_leave(event):
         """Handle user leave events."""
@@ -118,6 +118,6 @@ async def setup(client):
                 except Exception as e:
                     print(f"Error deleting goodbye message: {e}")
     
-    # Register the event handlers
-    client.add_event_handler(on_user_join, events.ChatAction(func=lambda e: e.user_joined or e.user_added))
-    client.add_event_handler(on_user_leave, events.ChatAction(func=lambda e: e.user_kicked or e.user_left))
+    # Register handlers
+    client.client.add_event_handler(on_user_join, events.ChatAction(func=lambda e: e.user_joined or e.user_added))
+    client.client.add_event_handler(on_user_leave, events.ChatAction(func=lambda e: e.user_kicked or e.user_left))
